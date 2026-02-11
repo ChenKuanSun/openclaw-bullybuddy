@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>BullyBuddy</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- ── 3D World (secondary, hidden by default) ──────────────── -->
+    <div id="world" class="view-hidden">
+      <div id="world-canvas"></div>
+      <div id="world-labels"></div>
+
+      <!-- Overlay HUD -->
+      <div id="hud-top">
+        <span id="hud-status-3d">connecting...</span>
+        <span id="hud-title">BullyBuddy</span>
+        <button id="hud-back-dash" class="hud-btn" aria-label="Dashboard" title="Dashboard">&#x276E; Dashboard</button>
+      </div>
+      <div id="hud-hint">
+        Tap <strong>+ New Session</strong> to spawn a Claude worker
+      </div>
+      <div id="hud-bottom">
+        <button id="hud-spawn" class="hud-btn hud-btn-spawn">+ New Session</button>
+      </div>
+    </div>
+
+    <!-- ── Disconnect overlay ───────────────────────────────────── -->
+    <div id="disconnect-overlay" class="overlay-hidden">
+      <div class="disconnect-card">
+        <div class="disconnect-spinner"></div>
+        <div class="disconnect-text">Reconnecting to server...</div>
+      </div>
+    </div>
+
+    <!-- ── Terminal slide-in (over 3D) ──────────────────────────── -->
+    <div id="terminal-drawer" class="drawer-hidden">
+      <div id="drawer-header">
+        <button id="drawer-close" class="hud-btn" aria-label="Close">&#x2715;</button>
+        <span id="drawer-title">Session</span>
+        <div id="drawer-actions"></div>
+      </div>
+      <div id="drawer-toolbar"></div>
+      <div id="drawer-terminal"></div>
+    </div>
+
+    <!-- ── Dashboard (primary view) ──────────────────────────────── -->
+    <div id="dashboard">
+      <header id="dash-header">
+        <span id="hud-status">connecting...</span>
+        <h1>BullyBuddy</h1>
+        <span id="dash-stats"></span>
+        <button id="dash-settings" class="hud-btn" aria-label="Settings" title="Settings">&#x2699;</button>
+        <button id="dash-lobster" class="hud-btn" aria-label="3D View" title="3D Lobster View">&#x1F99E;</button>
+      </header>
+      <div id="dash-main">
+        <aside id="sidebar"></aside>
+        <section id="dash-terminal-area">
+          <div id="dash-terminal-header">
+            <button id="dash-terminal-back" class="hud-btn" aria-label="Back to session list">&#x276E;</button>
+            <span id="dash-terminal-title">Select a session</span>
+            <div id="dash-terminal-actions"></div>
+          </div>
+          <div id="dash-terminal-toolbar"></div>
+          <div id="dash-terminal-container"></div>
+        </section>
+      </div>
+    </div>
+
+    <!-- ── Settings Modal ─────────────────────────────────────────── -->
+    <div id="settings-modal" class="modal-hidden">
+      <div id="settings-backdrop"></div>
+      <div id="settings-panel">
+        <div id="settings-header">
+          <h2>Settings</h2>
+          <button id="settings-close" class="hud-btn" aria-label="Close">&#x2715;</button>
+        </div>
+        <div id="settings-body">
+          <div class="settings-field">
+            <label for="settings-cwd">Default Working Directory</label>
+            <div class="settings-cwd-row">
+              <input type="text" id="settings-cwd" placeholder="(server default)" readonly />
+              <button id="settings-browse" class="btn">Browse</button>
+              <button id="settings-clear-cwd" class="btn btn-danger">Clear</button>
+            </div>
+          </div>
+          <div class="settings-field">
+            <label>Groups</label>
+            <div id="settings-groups-list"></div>
+            <div class="settings-group-add-row">
+              <input type="text" id="settings-group-input" placeholder="New group name" />
+              <button id="settings-group-add" class="btn">Add</button>
+            </div>
+          </div>
+          <!-- File browser (hidden until Browse is clicked) -->
+          <div id="file-browser" class="browser-hidden">
+            <div id="browser-header">
+              <button id="browser-up" class="btn">&#x276E; Up</button>
+              <span id="browser-path"></span>
+              <button id="browser-select" class="btn btn-primary">Select this folder</button>
+            </div>
+            <div id="browser-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="./main.ts"></script>
+</body>
+</html>

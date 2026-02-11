@@ -1,0 +1,12 @@
+node_modules/
+dist-server/
+dist-dashboard/
+*.tsbuildinfo
+
+.env
+.env.*
+
+.DS_Store
+Thumbs.db
+
+*.log
