@@ -1,17 +1,20 @@
 ---
 name: bullybuddy
 description: >
-  Claude Code session manager using node-pty. Spawn multiple Claude Code CLI
-  instances, run parallel coding tasks across repos, monitor session states
-  in real-time, view sessions via web dashboard with 3D lobster visualization,
-  and orchestrate multi-agent coding workflows.
+  BullyBuddy — Claude Code session manager. Spawn multiple Claude Code CLI
+  instances via node-pty, monitor states in real-time, view sessions via web
+  dashboard with 3D lobster visualization, and control everything via /bullybuddy.
+user-invocable: true
+command-dispatch: tool
+command-tool: exec
+command-arg-mode: raw
 metadata:
   {
     "openclaw":
       {
         "emoji": "🦞",
         "homepage": "https://github.com/ChenKuanSun/openclaw-bullybuddy",
-        "requires": { "bins": ["bullybuddy", "claude"] },
+        "requires": { "bins": ["bullybuddy", "claude", "jq"] },
         "install":
           [
             {
@@ -29,7 +32,7 @@ metadata:
 
 Spawns and manages multiple Claude Code CLI sessions via `node-pty`. REST API, WebSocket streaming, web dashboard — no tmux needed.
 
-## Server Setup
+## Setup
 
 1. Install the package globally:
 
@@ -43,30 +46,28 @@ npm install -g openclaw-bullybuddy
 bullybuddy server
 ```
 
-Connection info is auto-saved to `~/.bullybuddy/connection.json` on startup. The `/bb` slash command reads it automatically — no env vars needed.
+Connection info is auto-saved to `~/.bullybuddy/connection.json` on startup. The `/bullybuddy` command reads it automatically — no env vars needed.
 
-## Quick Start
+For remote access, start with `bullybuddy server --tunnel`. The tunnel URL is available via `/bullybuddy url`.
 
-```bash
-# Spawn a session with a task
-bullybuddy spawn --name fix-auth --group myproject --cwd ~/app
+## /bullybuddy Slash Command
 
-# List sessions
-bullybuddy list
-
-# Send input to a session
-bullybuddy send <id> "Fix the login bug in auth.ts"
-
-# Attach to a session interactively
-bullybuddy attach <id>
-
-# Open web dashboard
-bullybuddy open
+```
+/bullybuddy status          - Server status & session summary
+/bullybuddy list            - List all sessions
+/bullybuddy spawn [cwd] [task] [group] - Create new session
+/bullybuddy send <id> <text> - Send input to session
+/bullybuddy output <id> [lines] - Show session output/transcript
+/bullybuddy kill <id>       - Terminate session
+/bullybuddy url             - Show dashboard URL (local + tunnel)
+/bullybuddy audit [limit]   - View audit log
+/bullybuddy transcript <id> [limit] - View conversation transcript
+/bullybuddy help            - Show help
 ```
 
 ## Authentication
 
-A random token is generated on each server start and saved to `~/.bullybuddy/connection.json` (mode 0600). CLI and `/bb` auto-discover it. For the dashboard, the token is included in the URL printed on startup. The connection file is deleted on graceful shutdown.
+A random token is generated on each server start and saved to `~/.bullybuddy/connection.json` (mode 0600). CLI and `/bullybuddy` auto-discover it. For the dashboard, the token is included in the URL printed on startup. The connection file is deleted on graceful shutdown.
 
 ## API Overview
 
@@ -159,7 +160,7 @@ Start the server with `--tunnel` to create a Cloudflare temporary URL automatica
 bullybuddy server --tunnel
 ```
 
-The tunnel URL is printed on startup and saved to `~/.bullybuddy/connection.json`. Use `bullybuddy url` or `/bb url` to retrieve it anytime.
+The tunnel URL is printed on startup and saved to `~/.bullybuddy/connection.json`. Use `bullybuddy url` or `/bullybuddy url` to retrieve it anytime.
 
 ## CLI Commands
 
@@ -174,4 +175,11 @@ bullybuddy attach <id>                     # Interactive terminal
 bullybuddy kill <id>                       # Kill session
 bullybuddy groups                          # List groups
 bullybuddy open                            # Open dashboard
+```
+
+## Script
+
+When invoked, run:
+```bash
+{baseDir}/scripts/bullybuddy.sh $ARGUMENTS
 ```
