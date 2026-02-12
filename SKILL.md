@@ -1,9 +1,9 @@
 ---
 name: bullybuddy
 description: >
-  BullyBuddy — Claude Code session manager. Spawn multiple Claude Code CLI
-  instances via node-pty, monitor states in real-time, view sessions via web
-  dashboard with 3D lobster visualization, and control everything via /bullybuddy.
+  BullyBuddy — Claude Code session manager CLI wrapper. Spawn, list, send input,
+  kill, and monitor multiple Claude Code sessions via /bullybuddy slash command.
+  Reads auth token from ~/.bullybuddy/connection.json automatically.
 user-invocable: true
 command-dispatch: tool
 command-tool: exec
@@ -14,7 +14,7 @@ metadata:
       {
         "emoji": "🦞",
         "homepage": "https://github.com/ChenKuanSun/openclaw-bullybuddy",
-        "requires": { "bins": ["bullybuddy", "claude", "jq"] },
+        "requires": { "bins": ["bullybuddy", "claude", "jq", "curl"] },
         "install":
           [
             {
@@ -64,6 +64,13 @@ For remote access, start with `bullybuddy server --tunnel`. The tunnel URL is av
 /bullybuddy transcript <id> [limit] - View conversation transcript
 /bullybuddy help            - Show help
 ```
+
+## Security Notice
+
+- The auth token grants **full control over all spawned Claude Code sessions**, including sending arbitrary input. Treat it as a secret.
+- The `/bullybuddy url` command outputs the dashboard URL with the token embedded. Do not share or log this URL publicly.
+- When using `--tunnel`, the dashboard and API are exposed to the internet via a Cloudflare temporary URL. Anyone with the token can access all sessions remotely.
+- Spawned sessions run Claude Code with your local permissions. If `--dangerously-skip-permissions` is enabled, Claude can execute any command without confirmation.
 
 ## Authentication
 

@@ -58,7 +58,7 @@ case "$cmd" in
     id="$1"
     text="$2"
     if [[ -z "$id" || -z "$text" ]]; then
-      echo "Usage: bullybuddysend <id> <text>"
+      echo "Usage: bullybuddy send <id> <text>"
       exit 1
     fi
     # Append carriage return for PTY
@@ -70,7 +70,7 @@ case "$cmd" in
     id="$1"
     lines="${2:-30}"
     if [[ -z "$id" ]]; then
-      echo "Usage: bullybuddyoutput <id> [lines]"
+      echo "Usage: bullybuddy output <id> [lines]"
       exit 1
     fi
     info=$(curl -sf "$BB_URL/api/sessions/$id" -H "$AUTH")
@@ -83,7 +83,7 @@ case "$cmd" in
   kill|k|stop)
     id="$1"
     if [[ -z "$id" ]]; then
-      echo "Usage: bullybuddykill <id>"
+      echo "Usage: bullybuddy kill <id>"
       exit 1
     fi
     curl -sf -X DELETE "$BB_URL/api/sessions/$id" -H "$AUTH" > /dev/null
@@ -100,7 +100,7 @@ case "$cmd" in
     id="$1"
     limit="${2:-50}"
     if [[ -z "$id" ]]; then
-      echo "Usage: bullybuddytranscript <id> [limit]"
+      echo "Usage: bullybuddy transcript <id> [limit]"
       exit 1
     fi
     echo "=== Transcript $id ==="
