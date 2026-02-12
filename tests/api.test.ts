@@ -178,20 +178,12 @@ describe('REST API', () => {
 
   // ── Browse (security) ──
 
-  it('GET /api/browse returns directories', async () => {
+  it('GET /api/browse returns 403 when disabled (default)', async () => {
     const res = await api(port, '/api/browse');
-    const json = await res.json();
-    expect(json.ok).toBe(true);
-    expect(json.data.path).toBeTruthy();
-    expect(Array.isArray(json.data.dirs)).toBe(true);
-  });
-
-  it('GET /api/browse rejects paths outside home', async () => {
-    const res = await api(port, '/api/browse?path=/etc');
     expect(res.status).toBe(403);
     const json = await res.json();
     expect(json.ok).toBe(false);
-    expect(json.error).toContain('restricted');
+    expect(json.error).toContain('disabled');
   });
 
   // ── Summary ──

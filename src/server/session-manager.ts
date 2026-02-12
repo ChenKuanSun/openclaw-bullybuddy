@@ -14,8 +14,8 @@ const MAX_TRANSCRIPT = parseInt(process.env.BB_TRANSCRIPT_SIZE ?? '500', 10);
 // Env vars to strip from child processes
 const SENSITIVE_ENV_KEYS = ['BB_TOKEN', 'BB_HOST', 'BB_PORT'];
 
-// Whether to auto-add --dangerously-skip-permissions (default: true for backward compat)
-const DEFAULT_SKIP_PERMISSIONS = process.env.BB_SKIP_PERMISSIONS?.toLowerCase() !== 'false';
+// Whether to auto-add --dangerously-skip-permissions (default: false — opt-in only)
+const DEFAULT_SKIP_PERMISSIONS = process.env.BB_SKIP_PERMISSIONS?.toLowerCase() === 'true';
 
 // Allowed claude CLI flags (allowlist approach — block unknown args for safety)
 const ALLOWED_FLAGS = new Set([

@@ -10,6 +10,7 @@ import { auditLog, getAuditEntries } from './audit-log.js';
 
 const DASHBOARD_DIR = resolve(import.meta.dirname ?? '.', '../../dist-dashboard');
 const HOME_DIR = homedir();
+const BROWSE_ENABLED = process.env.BB_ENABLE_BROWSE?.toLowerCase() === 'true';
 
 function safeTokenCompare(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
@@ -324,8 +325,12 @@ export function createApiHandler(sessions: SessionManager, authToken: string) {
         return;
       }
 
-      // ── Browse directories ──
+      // ── Browse directories (disabled by default, enable with BB_ENABLE_BROWSE=true) ──
       if (url === '/api/browse' && method === 'GET') {
+        if (!BROWSE_ENABLED) {
+          json(res, 403, { ok: false, error: 'Browse endpoint disabled. Set BB_ENABLE_BROWSE=true to enable.' });
+          return;
+        }
         const rawPath = query.get('path') ?? HOME_DIR;
         const absPath = resolve(rawPath);
 

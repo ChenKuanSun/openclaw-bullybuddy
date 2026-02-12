@@ -1,6 +1,11 @@
 import { Command } from 'commander';
+import { readFileSync, existsSync } from 'fs';
+import { join } from 'path';
+import { homedir } from 'os';
 import { api, wsUrl } from './client.js';
 import type { SessionInfo, GroupInfo } from '../server/types.js';
+
+const CONN_FILE = join(homedir(), '.bullybuddy', 'connection.json');
 
 const program = new Command();
 
@@ -14,8 +19,9 @@ program
 program
   .command('server')
   .description('Start the BullyBuddy server')
-  .action(async () => {
-    // Dynamic import to avoid loading server deps for other commands
+  .option('--tunnel', 'Start Cloudflare tunnel for remote access')
+  .action(async (opts) => {
+    if (opts.tunnel) process.env.BB_TUNNEL = 'true';
     await import('../server/index.js');
   });
 
@@ -236,13 +242,43 @@ program
   .command('open')
   .description('Open the web dashboard in browser')
   .action(async () => {
-    const host = process.env.BB_HOST ?? '127.0.0.1';
-    const port = process.env.BB_PORT ?? '18900';
-    const token = process.env.BB_TOKEN ?? '';
-    const url = token ? `http://${host}:${port}/?token=${token}` : `http://${host}:${port}`;
+    let url = '';
+    if (existsSync(CONN_FILE)) {
+      try {
+        const conn = JSON.parse(readFileSync(CONN_FILE, 'utf-8'));
+        url = `${conn.url}/?token=${conn.token}`;
+      } catch { /* fall through */ }
+    }
+    if (!url) {
+      const host = process.env.BB_HOST ?? '127.0.0.1';
+      const port = process.env.BB_PORT ?? '18900';
+      url = `http://${host}:${port}`;
+    }
     const open = (await import('open')).default;
     await open(url);
     console.log(`Opened ${url}`);
+  });
+
+// ── url ─────────────────────────────────────────────────────────────────────
+
+program
+  .command('url')
+  .description('Show dashboard URL (local and tunnel if active)')
+  .action(async () => {
+    if (!existsSync(CONN_FILE)) {
+      console.error('Server not running (no connection file found).');
+      process.exit(1);
+    }
+    try {
+      const conn = JSON.parse(readFileSync(CONN_FILE, 'utf-8'));
+      console.log(`Local:  ${conn.url}/?token=${conn.token}`);
+      if (conn.tunnel) {
+        console.log(`Tunnel: ${conn.tunnel}/?token=${conn.token}`);
+      }
+    } catch {
+      console.error('Could not read connection file.');
+      process.exit(1);
+    }
   });
 
 program.parse();

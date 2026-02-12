@@ -63,6 +63,12 @@ The server prints a dashboard URL with an auth token:
 [bb] dashboard: http://127.0.0.1:18900/?token=a1b2c3d4...
 ```
 
+Start with `--tunnel` to create a Cloudflare temporary URL for remote/mobile access:
+
+```bash
+bullybuddy server --tunnel
+```
+
 ### CLI commands
 
 ```bash
@@ -87,6 +93,9 @@ bullybuddy kill <session-id>
 
 # List groups
 bullybuddy groups
+
+# Show dashboard URL (local + tunnel)
+bullybuddy url
 
 # Open dashboard in browser
 bullybuddy open
@@ -141,21 +150,25 @@ BB_EXTRA_ARGS="--output-format,--max-turns" bullybuddy server
 
 ### Authentication
 
-All API and WebSocket endpoints require a token. The token is auto-generated on server start and printed to the console.
+All API and WebSocket endpoints require a token. The token is auto-generated on server start and saved to `~/.bullybuddy/connection.json`.
 
-- **CLI**: Set `BB_TOKEN` environment variable
+- **CLI / `/bb` slash command**: Auto-discovers token from `~/.bullybuddy/connection.json` — no configuration needed
 - **Dashboard**: Pass `?token=...` in the URL (automatically persisted in sessionStorage)
 - **API**: Use `Authorization: Bearer <token>` header or `?token=...` query parameter
+
+The connection file is cleaned up on graceful shutdown.
 
 ### Environment variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `BB_PORT` | `18900` | Server port |
-| `BB_HOST` | `127.0.0.1` | Server bind address |
-| `BB_TOKEN` | (auto-generated) | Auth token |
+| `BB_HOST` | `127.0.0.1` | Server bind address (use `0.0.0.0` for remote/mobile access) |
+| `BB_TOKEN` | (auto-generated) | Auth token (saved to `~/.bullybuddy/connection.json`) |
+| `BB_SKIP_PERMISSIONS` | `false` | Set `true` to auto-add `--dangerously-skip-permissions` to spawned sessions |
+| `BB_ENABLE_BROWSE` | `false` | Set `true` to enable the `/api/browse` directory browser endpoint |
 | `BB_EXTRA_ARGS` | (none) | Additional allowed claude CLI flags (comma-separated) |
-| `BB_OPENCLAW_WEBHOOK_URL` | (none) | Webhook URL for state change notifications |
+| `BB_OPENCLAW_WEBHOOK_URL` | (none) | Webhook URL for state notifications (metadata only, no terminal output) |
 
 ## API
 
@@ -171,7 +184,7 @@ All API and WebSocket endpoints require a token. The token is auto-generated on 
 | `POST` | `/api/sessions/:id/mute` | Mute webhook notifications |
 | `POST` | `/api/sessions/:id/unmute` | Unmute webhook notifications |
 | `GET` | `/api/groups` | List groups with session counts |
-| `GET` | `/api/browse` | Browse directories `?path=` (restricted to home) |
+| `GET` | `/api/browse` | Browse directories `?path=` (requires `BB_ENABLE_BROWSE=true`) |
 
 ## Development
 

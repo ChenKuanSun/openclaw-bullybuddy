@@ -6,16 +6,22 @@ description: >
   in real-time, view sessions via web dashboard with 3D lobster visualization,
   and orchestrate multi-agent coding workflows.
 metadata:
-  openclaw:
-    emoji: "🦞"
-    requires:
-      bins: ["bullybuddy", "claude"]
-    install:
-      - id: node
-        kind: node
-        package: openclaw-bullybuddy
-        bins: ["bullybuddy"]
-        label: "Install BullyBuddy (npm)"
+  {
+    "openclaw":
+      {
+        "emoji": "🦞",
+        "requires": { "bins": ["bullybuddy", "claude"] },
+        "install":
+          [
+            {
+              "id": "node",
+              "kind": "node",
+              "package": "openclaw-bullybuddy",
+              "bins": ["bullybuddy"],
+            },
+          ],
+      },
+  }
 ---
 
 # BullyBuddy
@@ -30,22 +36,13 @@ Spawns and manages multiple Claude Code CLI sessions via `node-pty`. REST API, W
 npm install -g openclaw-bullybuddy
 ```
 
-2. Start the server (it prints an auth token and dashboard URL on startup):
+2. Start the server:
 
 ```bash
 bullybuddy server
 ```
 
-3. Configure your OpenClaw environment with the server URL and the token printed above:
-
-```json
-{
-  "env": {
-    "BB_URL": "http://127.0.0.1:18900",
-    "BB_TOKEN": "<token from step 2>"
-  }
-}
-```
+Connection info is auto-saved to `~/.bullybuddy/connection.json` on startup. The `/bb` slash command reads it automatically — no env vars needed.
 
 ## Quick Start
 
@@ -84,7 +81,7 @@ All endpoints require authentication via header or query parameter. All response
 | `POST` | `/api/sessions/:id/unmute` | Unmute notifications |
 | `GET` | `/api/groups` | Groups with session counts |
 | `GET` | `/api/summary` | Aggregate state counts and groups |
-| `GET` | `/api/browse` | Browse directories (restricted to $HOME) |
+| `GET` | `/api/browse` | Browse directories (disabled by default) |
 | `GET` | `/api/audit` | Audit log |
 | `GET` | `/api/sessions/:id/transcript` | Conversation transcript |
 
@@ -149,26 +146,34 @@ State transitions are broadcast via WebSocket and reflected in `GET /api/summary
 
 Poll `GET /api/summary` on an interval to check fleet status. The `sessionsNeedingAttention` field contains IDs of sessions in `permission_needed` or `error` state.
 
-Webhooks are also supported via `BB_OPENCLAW_WEBHOOK_URL` for push-based notifications on state changes.
+Webhooks are also supported via `BB_OPENCLAW_WEBHOOK_URL` for push-based state notifications (metadata only, no terminal output).
 
-## Environment Variables
+## Remote Access
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `BB_PORT` | `18900` | Server port |
-| `BB_HOST` | `127.0.0.1` | Bind address |
-| `BB_TOKEN` | auto-generated | Auth token (printed on startup) |
-| `BB_EXTRA_ARGS` | — | Additional allowed Claude CLI flags, comma-separated |
-| `BB_OPENCLAW_WEBHOOK_URL` | — | Webhook URL for push-based state notifications |
-| `BB_AUDIT_LOG_SIZE` | `1000` | Max audit log entries |
-| `BB_AUDIT_LOG_FILE` | — | Path to persistent JSONL audit log |
-| `BB_TRANSCRIPT_SIZE` | `500` | Max transcript entries per session |
-| `BB_TRANSCRIPT_DIR` | — | Directory for per-session JSONL transcript files |
+Start the server with `--tunnel` to create a Cloudflare temporary URL automatically:
+
+```bash
+bullybuddy server --tunnel
+```
+
+The tunnel URL is printed on startup and saved to `~/.bullybuddy/connection.json`. Use `bullybuddy url` or `/bb url` to retrieve it anytime.
+
+For LAN-only access, bind to all interfaces instead:
+
+```bash
+BB_HOST=0.0.0.0 bullybuddy server
+```
+
+## Configuration
+
+Default server binds to `127.0.0.1:18900`. See the project README for advanced configuration options (`BB_PORT`, `BB_HOST`, etc.).
 
 ## CLI Commands
 
 ```bash
 bullybuddy server                          # Start server
+bullybuddy server --tunnel                 # Start with Cloudflare tunnel
+bullybuddy url                             # Show dashboard URL (local + tunnel)
 bullybuddy spawn --name worker --group proj  # Spawn session
 bullybuddy list --json                     # List sessions
 bullybuddy send <id> "Fix the bug"         # Send input

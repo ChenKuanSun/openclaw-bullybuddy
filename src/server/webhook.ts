@@ -15,7 +15,6 @@ interface WebhookPayload {
   sessionName: string;
   group: string;
   state: DetailedState | 'exited';
-  recentOutput?: string;
   exitCode?: number | null;
   timestamp: string;
   task?: string | null;
@@ -30,14 +29,6 @@ const mutedSessions = new Set<string>();
 // Track sessions that were recently active (to detect idle-after-work)
 const wasActive = new Set<string>();
 const idleTimers = new Map<string, ReturnType<typeof setTimeout>>();
-
-import { stripAnsi } from './utils.js';
-
-function getRecentOutput(scrollback: string[], lines: number = 5): string {
-  const joined = stripAnsi(scrollback.slice(-20).join(''));
-  const allLines = joined.split('\n').filter((l) => l.trim().length > 0);
-  return allLines.slice(-lines).join('\n');
-}
 
 async function postWebhook(payload: WebhookPayload): Promise<void> {
   if (!WEBHOOK_URL) return;
@@ -88,10 +79,8 @@ export function setupWebhook(sessions: SessionManager): void {
       wasActive.add(sessionId);
     }
 
-    // Fire webhook for notable states
+    // Fire webhook for notable states (metadata only — no terminal output)
     if (state === 'permission_needed' || state === 'error') {
-      const scrollback = sessions.getScrollback(sessionId);
-      // Re-fetch info to get live metrics
       const freshInfo = sessions.getInfo(sessionId);
       postWebhook({
         event: `state:${state}`,
@@ -99,7 +88,6 @@ export function setupWebhook(sessions: SessionManager): void {
         sessionName: info.name,
         group: info.group,
         state,
-        recentOutput: getRecentOutput(scrollback),
         timestamp: new Date().toISOString(),
         task: freshInfo?.task,
         totalWorkingMs: freshInfo?.totalWorkingMs,

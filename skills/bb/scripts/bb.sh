@@ -4,12 +4,18 @@
 
 set -e
 
-# Config from env or defaults
+# Auto-discover from ~/.bullybuddy/connection.json, fallback to env
+CONN_FILE="$HOME/.bullybuddy/connection.json"
+
+if [[ -z "$BB_TOKEN" && -f "$CONN_FILE" ]]; then
+  BB_URL="$(jq -r '.url' "$CONN_FILE")"
+  BB_TOKEN="$(jq -r '.token' "$CONN_FILE")"
+fi
+
 BB_URL="${BB_URL:-http://127.0.0.1:18900}"
-BB_TOKEN="${BB_TOKEN:-}"
 
 if [[ -z "$BB_TOKEN" ]]; then
-  echo "Error: BB_TOKEN not set"
+  echo "Error: BullyBuddy server not running (no connection file found)"
   exit 1
 fi
 
@@ -101,6 +107,14 @@ case "$cmd" in
     curl -sf "$BB_URL/api/sessions/$id/transcript?last=$limit" -H "$AUTH" | jq -r '.data[] | "[\(.role)] \(.content)"'
     ;;
     
+  url|u)
+    echo "Local:  $BB_URL/?token=$BB_TOKEN"
+    tunnel=$(jq -r '.tunnel // empty' "$CONN_FILE" 2>/dev/null)
+    if [[ -n "$tunnel" ]]; then
+      echo "Tunnel: $tunnel/?token=$BB_TOKEN"
+    fi
+    ;;
+
   help|h|"")
     cat << 'EOF'
 BullyBuddy Commands:
@@ -110,11 +124,10 @@ BullyBuddy Commands:
   send, input, i     - Send input <id> <text>
   output, out, o     - Show output <id> [lines]
   kill, k, stop      - Kill session <id>
+  url, u             - Show dashboard URL
   audit, a           - Audit log [limit]
   transcript, t      - Transcript <id> [limit]
   help, h            - This help
-
-Env: BB_URL, BB_TOKEN
 EOF
     ;;
     

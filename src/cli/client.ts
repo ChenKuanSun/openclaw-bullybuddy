@@ -1,7 +1,21 @@
+import { readFileSync, existsSync } from 'fs';
+import { join } from 'path';
+import { homedir } from 'os';
 import type { ApiResponse } from '../server/types.js';
 
-const BASE = `http://${process.env.BB_HOST ?? '127.0.0.1'}:${process.env.BB_PORT ?? '18900'}`;
-const TOKEN = process.env.BB_TOKEN ?? '';
+const CONN_FILE = join(homedir(), '.bullybuddy', 'connection.json');
+
+let BASE = `http://${process.env.BB_HOST ?? '127.0.0.1'}:${process.env.BB_PORT ?? '18900'}`;
+let TOKEN = process.env.BB_TOKEN ?? '';
+
+// Auto-discover from connection.json if no env vars set
+if (!TOKEN && existsSync(CONN_FILE)) {
+  try {
+    const conn = JSON.parse(readFileSync(CONN_FILE, 'utf-8'));
+    if (conn.url) BASE = conn.url;
+    if (conn.token) TOKEN = conn.token;
+  } catch { /* ignore */ }
+}
 
 export async function api<T = unknown>(
   path: string,
@@ -21,8 +35,7 @@ export async function api<T = unknown>(
 }
 
 export function wsUrl(): string {
-  const host = process.env.BB_HOST ?? '127.0.0.1';
-  const port = process.env.BB_PORT ?? '18900';
+  const url = new URL(BASE);
   const tokenParam = TOKEN ? `?token=${TOKEN}` : '';
-  return `ws://${host}:${port}/ws${tokenParam}`;
+  return `ws://${url.host}/ws${tokenParam}`;
 }

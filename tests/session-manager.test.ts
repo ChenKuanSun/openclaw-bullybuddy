@@ -194,15 +194,14 @@ describe('SessionManager', () => {
 
   // ── skipPermissions ──────────────────────────────────────────────────────
 
-  it('adds --dangerously-skip-permissions by default', () => {
+  it('does not add --dangerously-skip-permissions by default', () => {
     sm.spawn();
-    expect(spawnedPtys[0].spawnArgs).toContain('--dangerously-skip-permissions');
+    expect(spawnedPtys[0].spawnArgs).not.toContain('--dangerously-skip-permissions');
   });
 
-  it('does not duplicate --dangerously-skip-permissions when already in args', () => {
-    sm.spawn({ args: ['--dangerously-skip-permissions'] });
-    const dspCount = spawnedPtys[0].spawnArgs.filter((a) => a === '--dangerously-skip-permissions').length;
-    expect(dspCount).toBe(1);
+  it('adds --dangerously-skip-permissions when skipPermissions is true', () => {
+    sm.spawn({ skipPermissions: true });
+    expect(spawnedPtys[0].spawnArgs).toContain('--dangerously-skip-permissions');
   });
 
   it('omits --dangerously-skip-permissions when skipPermissions is false', () => {
