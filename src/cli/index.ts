@@ -12,7 +12,7 @@ const program = new Command();
 program
   .name('bullybuddy')
   .description('BullyBuddy — Claude Code session manager')
-  .version('0.1.0');
+  .version('0.5.0');
 
 // ── server ───────────────────────────────────────────────────────────────────
 
