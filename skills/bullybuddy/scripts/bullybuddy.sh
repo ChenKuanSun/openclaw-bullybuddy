@@ -1,6 +1,6 @@
 #!/bin/bash
 # BullyBuddy CLI wrapper for OpenClaw slash commands
-# Usage: bb.sh <subcommand> [args...]
+# Usage: bullybuddy.sh <subcommand> [args...]
 
 set -e
 
@@ -58,7 +58,7 @@ case "$cmd" in
     id="$1"
     text="$2"
     if [[ -z "$id" || -z "$text" ]]; then
-      echo "Usage: bb send <id> <text>"
+      echo "Usage: bullybuddysend <id> <text>"
       exit 1
     fi
     # Append carriage return for PTY
@@ -70,7 +70,7 @@ case "$cmd" in
     id="$1"
     lines="${2:-30}"
     if [[ -z "$id" ]]; then
-      echo "Usage: bb output <id> [lines]"
+      echo "Usage: bullybuddyoutput <id> [lines]"
       exit 1
     fi
     info=$(curl -sf "$BB_URL/api/sessions/$id" -H "$AUTH")
@@ -83,7 +83,7 @@ case "$cmd" in
   kill|k|stop)
     id="$1"
     if [[ -z "$id" ]]; then
-      echo "Usage: bb kill <id>"
+      echo "Usage: bullybuddykill <id>"
       exit 1
     fi
     curl -sf -X DELETE "$BB_URL/api/sessions/$id" -H "$AUTH" > /dev/null
@@ -100,7 +100,7 @@ case "$cmd" in
     id="$1"
     limit="${2:-50}"
     if [[ -z "$id" ]]; then
-      echo "Usage: bb transcript <id> [limit]"
+      echo "Usage: bullybuddytranscript <id> [limit]"
       exit 1
     fi
     echo "=== Transcript $id ==="
@@ -133,7 +133,7 @@ EOF
     
   *)
     echo "Unknown command: $cmd"
-    echo "Run 'bb help' for usage"
+    echo "Run 'bullybuddy help' for usage"
     exit 1
     ;;
 esac

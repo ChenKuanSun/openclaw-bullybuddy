@@ -152,7 +152,7 @@ BB_EXTRA_ARGS="--output-format,--max-turns" bullybuddy server
 
 All API and WebSocket endpoints require a token. The token is auto-generated on server start and saved to `~/.bullybuddy/connection.json`.
 
-- **CLI / `/bb` slash command**: Auto-discovers token from `~/.bullybuddy/connection.json` — no configuration needed
+- **CLI / `/bullybuddy` slash command**: Auto-discovers token from `~/.bullybuddy/connection.json` — no configuration needed
 - **Dashboard**: Pass `?token=...` in the URL (automatically persisted in sessionStorage)
 - **API**: Use `Authorization: Bearer <token>` header or `?token=...` query parameter
 
