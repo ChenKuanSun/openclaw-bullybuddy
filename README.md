@@ -33,8 +33,8 @@ npm install -g openclaw-bullybuddy
 Or clone and develop locally:
 
 ```bash
-git clone https://github.com/openclaw/bullybuddy.git
-cd bullybuddy
+git clone https://github.com/ChenKuanSun/openclaw-bullybuddy.git
+cd openclaw-bullybuddy
 npm install
 npm run dev
 ```
@@ -183,8 +183,12 @@ The connection file is cleaned up on graceful shutdown.
 | `DELETE` | `/api/sessions/:id` | Kill session |
 | `POST` | `/api/sessions/:id/mute` | Mute webhook notifications |
 | `POST` | `/api/sessions/:id/unmute` | Unmute webhook notifications |
+| `POST` | `/api/sessions/:id/task` | Set task metadata `{ task }` |
 | `GET` | `/api/groups` | List groups with session counts |
+| `GET` | `/api/summary` | Aggregate state counts and groups |
 | `GET` | `/api/browse` | Browse directories `?path=` (requires `BB_ENABLE_BROWSE=true`) |
+| `GET` | `/api/audit` | Audit log |
+| `GET` | `/api/sessions/:id/transcript` | Conversation transcript |
 
 ## Development
 
