@@ -10,6 +10,7 @@ metadata:
     "openclaw":
       {
         "emoji": "🦞",
+        "homepage": "https://github.com/ChenKuanSun/openclaw-bullybuddy",
         "requires": { "bins": ["bullybuddy", "claude"] },
         "install":
           [
@@ -63,9 +64,13 @@ bullybuddy attach <id>
 bullybuddy open
 ```
 
+## Authentication
+
+A random token is generated on each server start and saved to `~/.bullybuddy/connection.json` (mode 0600). CLI and `/bb` auto-discover it. For the dashboard, the token is included in the URL printed on startup. The connection file is deleted on graceful shutdown.
+
 ## API Overview
 
-All endpoints require authentication via header or query parameter. All responses follow `{ ok: boolean, data?: T, error?: string }`.
+All endpoints require the token via `Authorization: Bearer <token>` header or `?token=` query parameter. All responses follow `{ ok: boolean, data?: T, error?: string }`.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -146,8 +151,6 @@ State transitions are broadcast via WebSocket and reflected in `GET /api/summary
 
 Poll `GET /api/summary` on an interval to check fleet status. The `sessionsNeedingAttention` field contains IDs of sessions in `permission_needed` or `error` state.
 
-Webhooks are also supported via `BB_OPENCLAW_WEBHOOK_URL` for push-based state notifications (metadata only, no terminal output).
-
 ## Remote Access
 
 Start the server with `--tunnel` to create a Cloudflare temporary URL automatically:
@@ -157,16 +160,6 @@ bullybuddy server --tunnel
 ```
 
 The tunnel URL is printed on startup and saved to `~/.bullybuddy/connection.json`. Use `bullybuddy url` or `/bb url` to retrieve it anytime.
-
-For LAN-only access, bind to all interfaces instead:
-
-```bash
-BB_HOST=0.0.0.0 bullybuddy server
-```
-
-## Configuration
-
-Default server binds to `127.0.0.1:18900`. See the project README for advanced configuration options (`BB_PORT`, `BB_HOST`, etc.).
 
 ## CLI Commands
 

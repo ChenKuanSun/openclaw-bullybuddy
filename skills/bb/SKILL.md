@@ -9,6 +9,7 @@ metadata:
   {
     "openclaw":
       {
+        "homepage": "https://github.com/ChenKuanSun/openclaw-bullybuddy",
         "requires": { "bins": ["bullybuddy", "claude"] },
         "install":
           [
