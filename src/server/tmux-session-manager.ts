@@ -275,8 +275,12 @@ export class TmuxSessionManager extends EventEmitter implements ISessionManager 
     try {
       const output = tmuxExec(['list-sessions', '-F', '#{session_name}']);
       liveSessions = new Set(output.split('\n').filter(Boolean));
-    } catch {
-      // tmux server not running — all sessions are dead
+    } catch (err: any) {
+      // tmux exit code 1 = no sessions / server not running (normal)
+      // Other errors (timeout, ENOENT) are unexpected — log them
+      if (err?.status !== 1) {
+        console.warn(`[bb] tmux list-sessions failed: ${err instanceof Error ? err.message : err}`);
+      }
       liveSessions = new Set();
     }
 

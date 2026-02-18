@@ -144,7 +144,11 @@ export class WsBridge {
     // Backpressure: drop output/scrollback frames if client can't keep up
     // but always send state updates (session:created, session:exited, etc.)
     if ((msg.type === 'output' || msg.type === 'scrollback') && ws.bufferedAmount > MAX_WS_BUFFER_BYTES) return false;
-    ws.send(JSON.stringify(msg));
+    try {
+      ws.send(JSON.stringify(msg));
+    } catch {
+      return false;
+    }
     return true;
   }
 

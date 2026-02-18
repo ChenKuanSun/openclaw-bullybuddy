@@ -132,6 +132,19 @@ function checkSpawnRateLimit(ip: string): boolean {
   return true;
 }
 
+// Periodic cleanup of stale rate limiter entries (every 5 minutes)
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, timestamps] of spawnTimestamps) {
+    const recent = timestamps.filter((t) => now - t < SPAWN_RATE_WINDOW_MS);
+    if (recent.length === 0) {
+      spawnTimestamps.delete(ip);
+    } else {
+      spawnTimestamps.set(ip, recent);
+    }
+  }
+}, 5 * 60_000);
+
 // M7: Dynamic CORS — allow localhost/127.0.0.1 on any port
 function isAllowedOrigin(origin: string): boolean {
   try {

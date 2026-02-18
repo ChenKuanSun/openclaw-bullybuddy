@@ -39,8 +39,8 @@ async function postWebhook(payload: WebhookPayload): Promise<void> {
       body: JSON.stringify(payload),
       signal: AbortSignal.timeout(5000),
     });
-  } catch {
-    // Silently ignore webhook failures — don't break session management
+  } catch (err) {
+    console.warn(`[bb] webhook POST failed: ${err instanceof Error ? err.message : err}`);
   }
 }
 

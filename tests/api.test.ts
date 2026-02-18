@@ -327,6 +327,27 @@ describe('REST API', () => {
     expect(res.status).toBe(401);
   });
 
+  // ── Rate limiting (M6) ──
+
+  it('rate-limits spawn requests (429 after 10 per minute)', async () => {
+    let got429 = false;
+    for (let i = 0; i < 15; i++) {
+      const res = await api(port, '/api/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${TEST_TOKEN}` },
+        body: JSON.stringify({ name: `rate-${i}` }),
+      });
+      if (res.status === 429) {
+        got429 = true;
+        const json = await res.json();
+        expect(json.ok).toBe(false);
+        expect(json.error).toContain('Too many spawn requests');
+        break;
+      }
+    }
+    expect(got429).toBe(true);
+  });
+
   // ── 404 ──
 
   it('returns 404 for unknown API routes', async () => {
