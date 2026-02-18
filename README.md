@@ -6,11 +6,11 @@
 
 ![BullyBuddy 3D Lobster Farm](cover.png)
 
-Claude Code session manager with web dashboard and CLI. Spawn, group, and monitor multiple Claude Code instances without tmux.
+Claude Code session manager with web dashboard and CLI. Spawn, group, and monitor multiple Claude Code instances. Dual backend: **tmux** (default, sessions survive server restart) or **node-pty** (fallback).
 
 ## Features
 
-- **Session management** — spawn, kill, and monitor Claude Code instances via `node-pty`
+- **Session management** — spawn, kill, and monitor Claude Code instances via tmux (default) or node-pty
 - **Smart state detection** — real-time analysis of PTY output to detect working, idle, permission_needed, compacting, error states
 - **Web dashboard** — real-time terminal view with session sidebar, groups, and settings
 - **3D lobster view** — Three.js scene with animated lobster workers grouped by project
@@ -23,6 +23,7 @@ Claude Code session manager with web dashboard and CLI. Spawn, group, and monito
 
 - Node.js >= 20
 - [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) installed and on `PATH`
+- [tmux](https://github.com/tmux/tmux) (recommended — sessions survive server restart; falls back to node-pty if unavailable)
 
 ## Install
 
@@ -44,7 +45,9 @@ npm run dev
 - **Server**: Native Node.js `http` + `ws` (no framework)
 - **Dashboard**: Vanilla TypeScript + xterm.js + Three.js, built with Vite
 - **CLI**: `commander` for command parsing
-- **PTY**: `node-pty` for process management (no tmux)
+- **Session backend** (dual):
+  - **tmux** (default) — sessions survive server restart, output via `pipe-pane`, input via `load-buffer`/`paste-buffer`
+  - **node-pty** (fallback) — sessions tied to server lifetime, direct PTY I/O
 - **State detector**: Analyzes PTY output patterns to determine Claude's actual state
 
 ## Usage
@@ -165,10 +168,15 @@ The connection file is cleaned up on graceful shutdown.
 | `BB_PORT` | `18900` | Server port |
 | `BB_HOST` | `127.0.0.1` | Server bind address (use `0.0.0.0` for remote/mobile access) |
 | `BB_TOKEN` | (auto-generated) | Auth token (saved to `~/.bullybuddy/connection.json`) |
+| `BB_BACKEND` | `auto` | Session backend: `tmux`, `pty`, or `auto` (prefers tmux when available) |
 | `BB_SKIP_PERMISSIONS` | `false` | Set `true` to auto-add `--dangerously-skip-permissions` to spawned sessions |
 | `BB_ENABLE_BROWSE` | `false` | Set `true` to enable the `/api/browse` directory browser endpoint |
 | `BB_EXTRA_ARGS` | (none) | Additional allowed claude CLI flags (comma-separated) |
 | `BB_OPENCLAW_WEBHOOK_URL` | (none) | Webhook URL for state notifications (metadata only, no terminal output) |
+| `BB_TRANSCRIPT_DIR` | (none) | Directory to persist conversation transcripts as `.jsonl` files |
+| `BB_TRANSCRIPT_SIZE` | `500` | Max transcript entries kept in memory per session |
+| `BB_AUDIT_LOG_FILE` | (none) | File path to persist audit log entries (JSONL) |
+| `BB_AUDIT_LOG_SIZE` | `1000` | Max audit entries kept in memory |
 
 ## API
 

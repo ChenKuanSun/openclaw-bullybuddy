@@ -5,9 +5,11 @@ import { join } from 'path';
 import { homedir } from 'os';
 import { spawn, type ChildProcess } from 'child_process';
 import { SessionManager } from './session-manager.js';
+import { TmuxSessionManager, isTmuxAvailable } from './tmux-session-manager.js';
 import { WsBridge } from './ws-bridge.js';
 import { createApiHandler } from './api.js';
 import { setupWebhook } from './webhook.js';
+import type { ISessionManager } from './types.js';
 
 const PORT = parseInt(process.env.BB_PORT ?? '18900', 10);
 const HOST = process.env.BB_HOST ?? '127.0.0.1';
@@ -22,7 +24,31 @@ if (AUTH_TOKEN.length < 8) {
   process.exit(1);
 }
 
-const sessions = new SessionManager();
+// Select backend: BB_BACKEND=tmux|pty (default: tmux if available)
+const backendPref = (process.env.BB_BACKEND ?? 'auto').toLowerCase();
+let sessions: ISessionManager;
+
+if (backendPref === 'pty') {
+  sessions = new SessionManager();
+  console.log('[bb] backend: node-pty');
+} else if (backendPref === 'tmux') {
+  if (!isTmuxAvailable()) {
+    console.error('[bb] ERROR: BB_BACKEND=tmux but tmux is not installed. Install with: brew install tmux');
+    process.exit(1);
+  }
+  sessions = new TmuxSessionManager();
+  console.log('[bb] backend: tmux');
+} else {
+  // auto — prefer tmux
+  if (isTmuxAvailable()) {
+    sessions = new TmuxSessionManager();
+    console.log('[bb] backend: tmux (auto-detected)');
+  } else {
+    sessions = new SessionManager();
+    console.log('[bb] backend: node-pty (tmux not found — sessions will not survive server restart)');
+  }
+}
+
 setupWebhook(sessions);
 const server = createServer(createApiHandler(sessions, AUTH_TOKEN));
 const wsBridge = new WsBridge(server, sessions, AUTH_TOKEN);
@@ -31,7 +57,7 @@ const masked = AUTH_TOKEN.slice(0, 4) + '...' + AUTH_TOKEN.slice(-4);
 
 // Use 127.0.0.1 for local clients when server binds to all interfaces
 const connHost = HOST === '0.0.0.0' ? '127.0.0.1' : HOST;
-try { mkdirSync(BB_DIR, { recursive: true }); } catch { /* ignore */ }
+try { mkdirSync(BB_DIR, { recursive: true, mode: 0o700 }); } catch { /* ignore */ }
 
 let tunnelProcess: ChildProcess | null = null;
 
@@ -45,11 +71,19 @@ function writeConnFile(extra?: Record<string, string>) {
   }
 }
 
-server.listen(PORT, HOST, () => {
+server.listen(PORT, HOST, async () => {
   writeConnFile();
   console.log(`[bb] server listening on http://${HOST}:${PORT}`);
   console.log(`[bb] token:     ${masked}`);
   console.log(`[bb] dashboard: http://${HOST}:${PORT}/?token=${AUTH_TOKEN}`);
+
+  // Recover existing tmux sessions from a previous server instance
+  if (sessions instanceof TmuxSessionManager) {
+    const recovered = await sessions.recover();
+    if (recovered > 0) {
+      console.log(`[bb] recovered ${recovered} session(s) from tmux`);
+    }
+  }
 
   // Start Cloudflare tunnel if requested
   if (process.env.BB_TUNNEL === 'true') {
@@ -102,3 +136,13 @@ function shutdown() {
 
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
+
+// Crash handlers — log and attempt graceful shutdown instead of silent death
+process.on('uncaughtException', (err) => {
+  console.error('[bb] FATAL uncaughtException:', err);
+  shutdown();
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[bb] FATAL unhandledRejection:', reason);
+  shutdown();
+});

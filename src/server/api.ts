@@ -3,9 +3,8 @@ import { readFileSync, existsSync, readdirSync, statSync, realpathSync } from 'f
 import { resolve, join, dirname } from 'path';
 import { homedir } from 'os';
 import { timingSafeEqual } from 'crypto';
-import type { SessionManager } from './session-manager.js';
-import type { ApiSpawnRequest, ApiSetTaskRequest, ApiInputRequest, ApiResizeRequest, ApiResponse, GroupInfo, DetailedState } from './types.js';
-import { muteSession, unmuteSession, isMuted } from './webhook.js';
+import type { ISessionManager, ApiSpawnRequest, ApiSetTaskRequest, ApiInputRequest, ApiResizeRequest, ApiResponse, GroupInfo, DetailedState } from './types.js';
+import { muteSession, unmuteSession } from './webhook.js';
 import { auditLog, getAuditEntries } from './audit-log.js';
 
 const DASHBOARD_DIR = resolve(import.meta.dirname ?? '.', '../../dist-dashboard');
@@ -143,7 +142,7 @@ function isAllowedOrigin(origin: string): boolean {
   }
 }
 
-export function createApiHandler(sessions: SessionManager, authToken: string) {
+export function createApiHandler(sessions: ISessionManager, authToken: string) {
   return async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const url = (req.url ?? '/').split('?')[0];
     const method = req.method ?? 'GET';

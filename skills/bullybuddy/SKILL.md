@@ -30,7 +30,7 @@ metadata:
 
 # BullyBuddy
 
-Spawns and manages multiple Claude Code CLI sessions via `node-pty`. REST API, WebSocket streaming, web dashboard — no tmux needed.
+Spawns and manages multiple Claude Code CLI sessions. Dual backend: **tmux** (default, sessions survive server restart) or **node-pty** (fallback). REST API, WebSocket streaming, web dashboard.
 
 ## Setup
 
@@ -108,7 +108,8 @@ All endpoints require the token via `Authorization: Bearer <token>` header or `?
   "task": "Implement feature X",
   "args": ["--verbose"],
   "cols": 120,
-  "rows": 40
+  "rows": 40,
+  "skipPermissions": false
 }
 ```
 
@@ -118,7 +119,7 @@ All fields optional. When `task` is provided, it is automatically sent as input 
 
 ## WebSocket Protocol
 
-Connect to `ws://<host>:<port>/ws` with auth credentials.
+Connect to `ws://<host>:<port>/ws?token=<token>`.
 
 ### Client Messages
 
@@ -139,6 +140,7 @@ Connect to `ws://<host>:<port>/ws` with auth credentials.
 | `session:created` | `session` | New session spawned |
 | `session:exited` | `sessionId`, `exitCode` | Session terminated |
 | `session:stateChanged` | `sessionId`, `detailedState` | State transition |
+| `error` | `message` | Error (e.g. invalid message) |
 
 ## State Detection
 

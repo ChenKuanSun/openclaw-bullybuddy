@@ -14,7 +14,7 @@ export function auditLog(entry: Omit<AuditEntry, 'timestamp'>): void {
   }
   if (LOG_FILE) {
     try {
-      appendFileSync(LOG_FILE, JSON.stringify(full) + '\n');
+      appendFileSync(LOG_FILE, JSON.stringify(full) + '\n', { mode: 0o600 });
     } catch {
       // Silently ignore file write failures
     }

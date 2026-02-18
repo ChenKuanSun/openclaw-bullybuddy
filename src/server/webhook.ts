@@ -3,8 +3,7 @@
 // Configure via BB_OPENCLAW_WEBHOOK_URL env var.
 // Only fires for notable events: permission_needed, error, exit, long idle.
 
-import type { SessionManager } from './session-manager.js';
-import type { DetailedState, SessionInfo } from './types.js';
+import type { ISessionManager, DetailedState, SessionInfo } from './types.js';
 
 const WEBHOOK_URL = process.env.BB_OPENCLAW_WEBHOOK_URL ?? '';
 const IDLE_ALERT_MS = 60_000; // Alert after 60s idle following activity
@@ -57,7 +56,7 @@ export function isMuted(sessionId: string): boolean {
   return mutedSessions.has(sessionId);
 }
 
-export function setupWebhook(sessions: SessionManager): void {
+export function setupWebhook(sessions: ISessionManager): void {
   if (!WEBHOOK_URL) return;
 
   console.log(`[bb] webhook: ${WEBHOOK_URL}`);

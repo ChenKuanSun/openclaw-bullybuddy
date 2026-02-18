@@ -42,6 +42,26 @@ export interface SpawnOptions {
   skipPermissions?: boolean;
 }
 
+// ── Session Manager Interface ────────────────────────────────────────────────
+// Both SessionManager (node-pty) and TmuxSessionManager implement this.
+
+import type { EventEmitter } from 'events';
+
+export interface ISessionManager extends EventEmitter {
+  spawn(opts?: SpawnOptions): SessionInfo;
+  setTask(id: string, task: string): boolean;
+  getInfo(id: string): SessionInfo | undefined;
+  getScrollback(id: string): string[];
+  getTranscript(id: string): TranscriptEntry[];
+  list(group?: string): SessionInfo[];
+  groups(): Map<string, SessionInfo[]>;
+  write(id: string, data: string): boolean;
+  resize(id: string, cols: number, rows: number): boolean;
+  kill(id: string): boolean;
+  killAll(): void;
+  count(): number;
+}
+
 // ── REST API ─────────────────────────────────────────────────────────────────
 
 export interface ApiSpawnRequest {

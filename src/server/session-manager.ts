@@ -2,58 +2,11 @@ import * as pty from 'node-pty';
 import { randomBytes } from 'crypto';
 import { existsSync, statSync } from 'fs';
 import { EventEmitter } from 'events';
-import type { SessionInfo, SessionStatus, DetailedState, SpawnOptions, TranscriptEntry } from './types.js';
+import type { ISessionManager, SessionInfo, DetailedState, SpawnOptions, TranscriptEntry } from './types.js';
 import { StateDetector } from './state-detector.js';
 import { stripAnsi } from './utils.js';
 import { appendTranscriptEntry } from './transcript.js';
-
-const MAX_SCROLLBACK_BYTES = 2 * 1024 * 1024; // 2MB
-const MAX_SESSIONS = 100;
-const MAX_TRANSCRIPT = parseInt(process.env.BB_TRANSCRIPT_SIZE ?? '500', 10);
-
-// Env vars to strip from child processes
-const SENSITIVE_ENV_KEYS = ['BB_TOKEN', 'BB_HOST', 'BB_PORT'];
-
-// Whether to auto-add --dangerously-skip-permissions (default: false — opt-in only)
-const DEFAULT_SKIP_PERMISSIONS = process.env.BB_SKIP_PERMISSIONS?.toLowerCase() === 'true';
-
-// Allowed claude CLI flags (allowlist approach — block unknown args for safety)
-const ALLOWED_FLAGS = new Set([
-  '--model', '-m',
-  '--print', '-p',
-  '--resume', '-r',
-  '--continue', '-c',
-  '--dangerously-skip-permissions',
-  '--verbose',
-  '--version',
-]);
-
-// Additional flags from env (comma-separated, e.g. BB_EXTRA_ARGS="--output-format,--max-turns")
-if (process.env.BB_EXTRA_ARGS) {
-  for (const f of process.env.BB_EXTRA_ARGS.split(',')) {
-    const trimmed = f.trim();
-    if (trimmed) ALLOWED_FLAGS.add(trimmed);
-  }
-}
-
-function isAllowedArg(arg: string): boolean {
-  // Exact match: --verbose, -p, etc.
-  if (ALLOWED_FLAGS.has(arg)) return true;
-  // Flag=value form: --model=sonnet, check the flag part
-  if (arg.includes('=')) {
-    const flag = arg.slice(0, arg.indexOf('='));
-    if (ALLOWED_FLAGS.has(flag)) return true;
-  }
-  // Positional/value args (not starting with -) are allowed — they follow a flag.
-  // The allowlist blocks unknown flags; positional values are validated by the claude CLI itself.
-  if (!arg.startsWith('-')) return true;
-  return false;
-}
-
-function sanitizeColsRows(value: number | undefined, fallback: number): number {
-  if (value === undefined || !Number.isFinite(value)) return fallback;
-  return Math.max(1, Math.min(500, Math.round(value)));
-}
+import { SENSITIVE_ENV_KEYS, MAX_SCROLLBACK_BYTES, MAX_SESSIONS, MAX_TRANSCRIPT, DEFAULT_SKIP_PERMISSIONS, isAllowedArg, sanitizeColsRows } from './shared.js';
 
 function makeChildEnv(): Record<string, string> {
   const env = { ...process.env } as Record<string, string>;
@@ -71,7 +24,7 @@ interface ManagedSession {
   disposables: { dispose(): void }[];
 }
 
-export class SessionManager extends EventEmitter {
+export class SessionManager extends EventEmitter implements ISessionManager {
   private sessions = new Map<string, ManagedSession>();
   private stateDetector: StateDetector;
 
@@ -227,6 +180,10 @@ export class SessionManager extends EventEmitter {
         managed.info.status = 'exited';
         managed.info.exitCode = exitCode;
         managed.info.pid = null;
+        // Clean up all disposables (including task auto-send listener) on natural exit
+        for (const d of managed.disposables) d.dispose();
+        managed.disposables.length = 0;
+        this.stateDetector.remove(id);
         this.emit('exit', id, exitCode);
       }),
     );
@@ -256,7 +213,7 @@ export class SessionManager extends EventEmitter {
     return true;
   }
 
-  get(id: string): ManagedSession | undefined {
+  private get(id: string): ManagedSession | undefined {
     return this.sessions.get(id);
   }
 
@@ -338,14 +295,22 @@ export class SessionManager extends EventEmitter {
   kill(id: string): boolean {
     const s = this.sessions.get(id);
     if (!s) return false;
-    for (const d of s.disposables) d.dispose();
-    s.disposables.length = 0;
-    if (s.info.status === 'running') {
-      s.pty.kill();
+
+    // If already exited naturally, just remove from map
+    if (s.info.status === 'exited') {
+      this.stateDetector.remove(id);
+      this.sessions.delete(id);
+      return true;
     }
+
+    // Dispose listeners before killing (prevents duplicate exit emission)
+    if (s.disposables.length > 0) {
+      for (const d of s.disposables) d.dispose();
+      s.disposables.length = 0;
+    }
+    s.pty.kill();
     this.stateDetector.remove(id);
     this.sessions.delete(id);
-    // Emit exit event so WS clients can update (e.g., show dead lobster)
     this.emit('exit', id, -1); // -1 indicates killed (not natural exit)
     return true;
   }

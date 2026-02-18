@@ -8,14 +8,8 @@
 // appears LATEST (closest to the end) wins. This ensures that the most recent
 // output determines the state, even if older patterns are still in the window.
 
-export type DetailedState =
-  | 'starting'
-  | 'idle'
-  | 'working'
-  | 'permission_needed'
-  | 'compacting'
-  | 'error';
-
+export type { DetailedState } from './types.js';
+import type { DetailedState } from './types.js';
 import { stripAnsi } from './utils.js';
 
 // How much recent output to keep per session (bytes of plain text)
@@ -23,6 +17,11 @@ const WINDOW_SIZE = 2048;
 
 // After this many ms of no output, if we're in 'working' we transition to 'idle'
 const IDLE_TIMEOUT_MS = 30_000;
+
+// Pre-filter: only run expensive regex matching if the window's tail contains
+// characters likely to appear in state-indicating output. This avoids burning
+// CPU on large code dumps that Claude emits while editing files.
+const TRIGGER_CHARS = /[❯✻·]|[Ee]rror|think|work|channel|read|writ|edit|run|search|compact|proceed|accept|[Aa]llow|[Dd]eny|confirm|trust|safety|[Bb]ypass|ENOENT|EACCES|APIError|Overloaded|rate.limit|Authentication/;
 
 export interface StateMetrics {
   totalWorkingMs: number;
@@ -172,14 +171,22 @@ export class StateDetector {
 
     // Find the pattern with the latest match position (most recent output wins)
     const prev = ss.state;
+
+    // Pre-filter: only run full regex scan if the window tail contains trigger chars.
+    // Check last 512 chars (where new content was just appended).
+    const tail = ss.window.slice(-512);
+    const hasTrigger = TRIGGER_CHARS.test(tail);
+
     let bestState: DetailedState | null = null;
     let bestIndex = -1;
 
-    for (const p of PATTERNS) {
-      const idx = p.lastIndex(ss.window);
-      if (idx > bestIndex) {
-        bestIndex = idx;
-        bestState = p.state;
+    if (hasTrigger) {
+      for (const p of PATTERNS) {
+        const idx = p.lastIndex(ss.window);
+        if (idx > bestIndex) {
+          bestIndex = idx;
+          bestState = p.state;
+        }
       }
     }
 
@@ -187,8 +194,13 @@ export class StateDetector {
       ss.state = bestState;
     } else if (ss.state === 'starting') {
       // Stay in starting until we see a recognizable pattern
+    } else if (!hasTrigger) {
+      // No trigger chars and not starting — likely working (code output)
+      if (ss.state !== 'working') {
+        ss.state = 'working';
+      }
     } else {
-      // Got unrecognized output while not starting — likely working
+      // Had triggers but no pattern matched — likely working
       ss.state = 'working';
     }
 

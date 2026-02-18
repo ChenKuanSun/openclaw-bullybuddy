@@ -2,8 +2,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import type { IncomingMessage } from 'http';
 import type { Server } from 'http';
 import { timingSafeEqual } from 'crypto';
-import type { SessionManager } from './session-manager.js';
-import type { DetailedState, WsClientMessage, WsServerMessage } from './types.js';
+import type { ISessionManager, DetailedState, WsClientMessage, WsServerMessage } from './types.js';
 import { auditLog } from './audit-log.js';
 
 function safeTokenCompare(a: string, b: string): boolean {
@@ -19,6 +18,7 @@ interface ClientState {
 
 const MAX_CLIENTS = 50;
 const MAX_INPUT_BYTES = 65536;
+const MAX_WS_BUFFER_BYTES = 4 * 1024 * 1024; // 4MB — drop output if client can't keep up
 
 export class WsBridge {
   private wss: WebSocketServer;
@@ -26,7 +26,7 @@ export class WsBridge {
   private outputBuffers = new Map<string, string>();
   private flushTimer: ReturnType<typeof setTimeout> | null = null;
 
-  constructor(server: Server, private sessions: SessionManager, private authToken: string) {
+  constructor(server: Server, private sessions: ISessionManager, private authToken: string) {
     this.wss = new WebSocketServer({ noServer: true });
 
     server.on('upgrade', (req: IncomingMessage, socket, head) => {
@@ -139,10 +139,13 @@ export class WsBridge {
     }
   }
 
-  private send(ws: WebSocket, msg: WsServerMessage): void {
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify(msg));
-    }
+  private send(ws: WebSocket, msg: WsServerMessage): boolean {
+    if (ws.readyState !== WebSocket.OPEN) return false;
+    // Backpressure: drop output/scrollback frames if client can't keep up
+    // but always send state updates (session:created, session:exited, etc.)
+    if ((msg.type === 'output' || msg.type === 'scrollback') && ws.bufferedAmount > MAX_WS_BUFFER_BYTES) return false;
+    ws.send(JSON.stringify(msg));
+    return true;
   }
 
   private broadcast(msg: WsServerMessage): void {
