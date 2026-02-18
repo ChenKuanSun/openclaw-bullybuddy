@@ -1,6 +1,6 @@
 {
   "name": "openclaw-bullybuddy",
-  "version": "0.6.4",
+  "version": "0.6.5",
   "description": "Claude Code session manager - spawn, group, and monitor multiple Claude Code instances from a web dashboard or CLI",
   "type": "module",
   "license": "MIT",
