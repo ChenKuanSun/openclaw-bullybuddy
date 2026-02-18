@@ -14,7 +14,14 @@ metadata:
       {
         "emoji": "🦞",
         "homepage": "https://github.com/ChenKuanSun/openclaw-bullybuddy",
-        "requires": { "bins": ["bullybuddy", "claude", "jq", "curl"] },
+        "requires": {
+          "bins": ["bullybuddy", "jq", "curl"],
+          "env": {
+            "BB_TOKEN": { "optional": true, "description": "Auth token (auto-read from ~/.bullybuddy/connection.json if unset)" },
+            "BB_URL": { "optional": true, "description": "Server URL (default http://127.0.0.1:18900)" }
+          },
+          "config": ["~/.bullybuddy/connection.json"],
+        },
         "install":
           [
             {

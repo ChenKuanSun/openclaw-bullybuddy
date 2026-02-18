@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.3] - 2026-02-18
+
+### Fixed
+
+- **ClawHub security scan**: Removed undeclared `claude` binary from `requires.bins` (skill script never invokes it)
+- **ClawHub security scan**: Added `requires.env` declarations for `BB_TOKEN` and `BB_URL`
+- **ClawHub security scan**: Declared `~/.bullybuddy/connection.json` in `requires.config`
+
 ## [0.6.0] - 2026-02-18
 
 ### Added
